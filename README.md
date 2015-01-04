@@ -15,6 +15,7 @@ Features Overview
 What is AMSG?
 ---------------
 
+```cpp
 struct person
 {
   std::string  name;
@@ -48,6 +49,7 @@ amsg::read(reader, des);
 assert(!reader.bad());
 
 assert(src == des);
+```
 
 Dependencies
 ------------
@@ -64,8 +66,9 @@ Supported Compilers
 Support C++11
 -------------------
 
-#define AMSG_STD_CXX11 in your project or just before include amsg hpps
+Define AMSG_STD_CXX11 in your project or just before include amsg hpps
 
+```cpp
 #define AMSG_STD_CXX11
 #include <amsg/all.hpp>
 
@@ -77,12 +80,14 @@ unsigned char buf[4096];
 amsg::zero_copy_buffer writer(buf, 4096);
 amsg::write(writer, fwd_list);
 assert(!writer.bad());
+```
 
 amsg::size_of
 -------------------
 
-using amsg::size_of to get object's serialize size
+Using amsg::size_of to get object's serialize size
 
+```cpp
 struct person
 {
   std::string  name;
@@ -101,12 +106,14 @@ amsg::error_code_t ec = amsg::success;
 std::size_t size = amsg::size_of(obj, ec);
 assert(ec == amsg::success);
 std::cout << "person's serialize size: " << size << std::endl;
+```
 
 smax
 -------------------
 
 Sometimes you want limit max size of an array of string:
 
+```cpp
 struct person
 {
   std::string  name;
@@ -119,12 +126,14 @@ struct person
 };
 
 AMSG(person, (name&smax(30))(age)); // smax(30) limit name string max size is 30 bytes
+```
 
 sfix
 -------------------
 
 Sometimes you want serialization size to be fixed:
 
+```cpp
 struct person
 {
   std::string    name;
@@ -136,7 +145,8 @@ struct person
   }
 };
 
-AMSG(person, (name)(age&sfix)); // sfix enforce age (int32_t) to be 4bytes after serialization,
+AMSG(person, (name)(age&sfix)); // sfix enforce age (int32_t) to be 4bytes after serialization
+```
 
 If no sfix, age will dependence its value:
   -128 to 127                     --> 1byte
