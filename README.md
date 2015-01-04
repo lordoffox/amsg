@@ -63,6 +63,7 @@ Supported Compilers
 
 Support C++11
 -------------------
+
 #define AMSG_STD_CXX11 in your project or just before include amsg hpps
 
 #define AMSG_STD_CXX11
@@ -79,6 +80,7 @@ assert(!writer.bad());
 
 amsg::size_of
 -------------------
+
 using amsg::size_of to get object's serialize size
 
 struct person
@@ -102,6 +104,7 @@ std::cout << "person's serialize size: " << size << std::endl;
 
 smax
 -------------------
+
 Sometimes you want limit max size of an array of string:
 
 struct person
@@ -119,6 +122,7 @@ AMSG(person, (name&smax(30))(age)); // smax(30) limit name string max size is 30
 
 sfix
 -------------------
+
 Sometimes you want serialization size to be fixed:
 
 struct person
