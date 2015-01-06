@@ -1,3 +1,7 @@
+The biicode block "https://www.biicode.com/nousxiong/amsg" has been generated from the forked github repo: "https://github.com/nousxiong/amsg".
+
+It includes slight modifications added to the original repository (https://github.com/lordoffox/amsg) in order to work properly with biicode. 
+
 AMSG v1.0
 =======
 
