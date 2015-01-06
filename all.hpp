@@ -10,7 +10,7 @@
 #ifndef AMSG_ALL_HPP
 #define AMSG_ALL_HPP
 
-#include <amsg/amsg.hpp>
-#include <amsg/zerocopy.hpp>
+#include "amsg.hpp"
+#include "zerocopy.hpp"
 
 #endif
