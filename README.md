@@ -1,3 +1,7 @@
+The biicode block "https://www.biicode.com/nousxiong/amsg" has been generated from the forked github repo: "https://github.com/nousxiong/amsg".
+
+It includes slight modifications added to the original repository (https://github.com/lordoffox/amsg) in order to work properly with biicode. 
+
 AMSG v1.0
 =======
 
@@ -37,14 +41,14 @@ person src;
 src.name = "lordoffox"
 src.age = 33
 
-amsg::zero_copy_buffer writer(buf, ENOUGH_SIZE);
+amsg::zerocopy_buffer_t writer(buf, ENOUGH_SIZE);
 amsg::write(writer, src);
 assert(!writer.bad());
 
 // deserialize
 person des;
 
-amsg::zero_copy_buffer reader(buf, ENOUGH_SIZE);
+amsg::zerocopy_buffer_t reader(buf, ENOUGH_SIZE);
 amsg::read(reader, des);
 assert(!reader.bad());
 
@@ -77,7 +81,7 @@ Define AMSG_STD_CXX11 in your project or just before include amsg hpps
 
 std::forward_list<int> fwd_list = {1,2,3,4,5};
 unsigned char buf[4096];
-amsg::zero_copy_buffer writer(buf, 4096);
+amsg::zerocopy_buffer_t writer(buf, 4096);
 amsg::write(writer, fwd_list);
 assert(!writer.bad());
 ```

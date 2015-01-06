@@ -39,7 +39,7 @@ if (AMSG_BUILD_TEST OR AMSG_BUILD_EXAMPLE)
   endif ()
 
   # Add the source and build tree to the search path for include gce header files.
-  include_directories (../)
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR}/../)
 
   # Set glibc for static runtime.
   if (AMSG_STATIC)
@@ -54,9 +54,9 @@ if (AMSG_BUILD_TEST OR AMSG_BUILD_EXAMPLE)
   endif ()
 
   # Boost headers only search.
-  find_package(Boost 1.55.0)
+  find_package (Boost 1.55.0)
   if (Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
+    include_directories (${Boost_INCLUDE_DIRS})
   else ()
     message (FATAL_ERROR "Boost not found! Please set BOOST_ROOT and rerun cmake.")
   endif ()
@@ -64,13 +64,13 @@ if (AMSG_BUILD_TEST OR AMSG_BUILD_EXAMPLE)
   set (CMAKE_VERBOSE_MAKEFILE true)
 
   if (AMSG_STATIC)
-    set (AMSG_LINK_PROP "${AMSG_LINK_PROP} -static -static-libgcc -static-libstdc++")
+    set (AMSG_LINK_PROP "-static -static-libgcc -static-libstdc++")
   endif ()
 
   if (AMSG_STD_CXX11 AND NOT WIN32)
-    set (AMSG_COMPILE_PROP "${AMSG_COMPILE_PROP} -std=c++11")
+    set (AMSG_COMPILE_PROP "-std=c++11")
     if (APPLE)
-      set (AMSG_COMPILE_PROP "${AMSG_COMPILE_PROP}  -stdlib=libc++")
+      set (AMSG_COMPILE_PROP "${AMSG_COMPILE_PROP} -stdlib=libc++")
     endif ()
   endif ()
 
