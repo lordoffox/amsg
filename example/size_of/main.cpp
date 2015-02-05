@@ -37,9 +37,7 @@ int main()
     src.age = 33;
     src.married = true;
 
-    amsg::error_code_t ec = amsg::success;
-    std::size_t size = amsg::size_of(src, ec);
-    BOOST_ASSERT(ec == amsg::success);
+    std::size_t size = amsg::size_of(src);
     std::cout << size << std::endl;
   }
   catch (std::exception& ex)

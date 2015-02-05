@@ -240,17 +240,17 @@ namespace amsg{	namespace detail
 	struct byte_size_of_impl
 	{
 		typedef typename ::boost::remove_const<ty>::type value_type;
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code);
+		static AMSG_INLINE std::size_t size(const value_type& value);
 	};
 
 	template<typename ty , int tag>
 	struct byte_size_of_enum_impl
 	{
 		typedef ty value_type;
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code)
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			int64_t temp = value;
-			return byte_size_of_impl<int64_t,tag>::size(temp,error_code);
+			return byte_size_of_impl<int64_t,tag>::size(temp);
 		}
 	};
 
@@ -270,7 +270,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(value < const_tag_as_type)
 			{
@@ -285,7 +285,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
 			{
@@ -324,7 +324,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::uint16_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(value < const_tag_as_type)
 			{
@@ -346,7 +346,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::int16_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
 			{
@@ -373,7 +373,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::uint32_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(value < const_tag_as_type)
 			{
@@ -403,7 +403,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::int32_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
 			{
@@ -438,7 +438,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::uint64_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(value < const_tag_as_type)
 			{
@@ -484,7 +484,7 @@ namespace amsg{	namespace detail
 	{
 		typedef ::boost::int64_t value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
 			{
@@ -535,7 +535,7 @@ namespace amsg{	namespace detail
 	{
 		typedef bool value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			return 1;
 		}
@@ -546,7 +546,7 @@ namespace amsg{	namespace detail
 	{
 		typedef float value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type&)
 		{
 			return sizeof(value_type);
 		}
@@ -557,7 +557,7 @@ namespace amsg{	namespace detail
 	{
 		typedef double value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& , error_code_t& )
+		static AMSG_INLINE std::size_t size(const value_type&)
 		{
 			return sizeof(value_type);
 		}
@@ -568,15 +568,10 @@ namespace amsg{	namespace detail
 	{
 		typedef ::std::basic_string<char, ::std::char_traits<char>, alloc_ty> value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
 			::std::size_t len = value.length();
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-      ::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len,error_code) + len;
+      ::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len) + len;
 			return size;
 		}
 	};
@@ -586,18 +581,13 @@ namespace amsg{	namespace detail
 	{
 		typedef ::std::basic_string<wchar_t, ::std::char_traits<wchar_t>, alloc_ty> value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
 			::std::size_t len = value.length();
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len,error_code);
+			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len);
 			for(::boost::uint32_t i = 0 ; i< len ; ++i)
 			{
-				size += byte_size_of_impl<wchar_t,0>::size(value[i],error_code);
+				size += byte_size_of_impl<wchar_t,0>::size(value[i]);
 			}
 			return size;
 		}
@@ -608,19 +598,14 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
 			::std::size_t len = value.size();
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-			::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len,error_code);
+			::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len);
 			for( typename value_type::const_iterator i = value.begin() ; i != value.end(); ++i )
 			{
 				const typename value_type::value_type& elem_value = *i;
-				size += byte_size_of_impl<typename value_type::value_type,tag>::size(elem_value,error_code);
+				size += byte_size_of_impl<typename value_type::value_type,tag>::size(elem_value);
 			}
 			return size;
 		}
@@ -669,19 +654,14 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
       ::std::size_t len = std::distance(value.begin(), value.end());
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-			::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len,error_code);
+			::std::size_t size = 	byte_size_of_impl< ::std::size_t,0>::size(len);
 			for( typename value_type::const_iterator i = value.begin() ; i != value.end(); ++i )
 			{
 				const typename value_type::value_type& elem_value = *i;
-				size += byte_size_of_impl<typename value_type::value_type,tag>::size(elem_value,error_code);
+				size += byte_size_of_impl<typename value_type::value_type,tag>::size(elem_value);
 			}
 			return size;
 		}
@@ -700,21 +680,16 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
 			::std::size_t len = value.size();
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len,error_code);
+			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len);
 			for( typename value_type::const_iterator i = value.begin() ; i != value.end(); ++i )
 			{
 				typedef typename ::boost::remove_const<typename value_type::value_type::first_type>::type first_type;
 				typedef typename ::boost::remove_const<typename value_type::value_type::second_type>::type second_type;
-				size += byte_size_of_impl<first_type,tag>::size(i->first,error_code);
-				size += byte_size_of_impl<second_type,tag>::size(i->second,error_code);
+				size += byte_size_of_impl<first_type,tag>::size(i->first);
+				size += byte_size_of_impl<second_type,tag>::size(i->second);
 			}
 			return size;
 		}
@@ -762,19 +737,14 @@ namespace amsg{	namespace detail
 	{
 		typedef ty value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code , ::std::size_t max = 0)
+		static AMSG_INLINE std::size_t size(const value_type& value , ::std::size_t max = 0)
 		{
 			::std::size_t len = value.size();
-			if(max>0&&max<len)
-			{
-				error_code = sequence_length_overflow;
-				return 0;
-			}
-			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len,error_code);
+			::std::size_t size = 	byte_size_of_impl< ::boost::uint32_t,0>::size(len);
 			for( typename value_type::const_iterator i = value.begin() ; i != value.end(); ++i )
 			{
 				typedef typename ::boost::remove_const<typename value_type::value_type>::type val_type;
-				size += byte_size_of_impl<val_type,tag>::size(i->first,error_code);
+				size += byte_size_of_impl<val_type,tag>::size(i->first);
 			}
 			return size;
 		}
@@ -2775,10 +2745,10 @@ namespace amsg{	namespace detail
 	{
 		typedef smax_valid<ty> value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& value , error_code_t& error_code)
+		static AMSG_INLINE std::size_t size(const value_type& value)
 		{
 			typedef typename ::boost::remove_const<ty>::type ref_type;
-			return byte_size_of<ref_type,tag>::impl_type::size(value.obj , error_code , value.size);
+			return byte_size_of<ref_type,tag>::impl_type::size(value.obj , value.size);
 		}
 	};
 
@@ -2842,7 +2812,7 @@ namespace amsg{	namespace detail
 	{
 		typedef sfix_op<ty> value_type;
 
-		static AMSG_INLINE std::size_t size(const value_type& , error_code_t&)
+		static AMSG_INLINE std::size_t size(const value_type&)
 		{
 			typedef typename ::boost::remove_const<ty>::type ref_type;
 			return sizeof(ref_type);
@@ -2887,15 +2857,15 @@ AMSG_INLINE void write(store_ty& store_data,const ty& value)
 }
 
 template <int tag , typename ty>
-AMSG_INLINE ::std::size_t size_of_x(const ty& value , error_code_t& error_code)
+AMSG_INLINE ::std::size_t size_of_x(const ty& value)
 {
-	return ::amsg::detail::byte_size_of<ty,tag>::impl_type::size(value,error_code);
+	return ::amsg::detail::byte_size_of<ty,tag>::impl_type::size(value);
 }
 
 template <typename ty>
-AMSG_INLINE ::std::size_t size_of(const ty& value , error_code_t& error_code)
+AMSG_INLINE ::std::size_t size_of(const ty& value)
 {
-	return ::amsg::detail::byte_size_of<ty,0>::impl_type::size(value,error_code);
+	return ::amsg::detail::byte_size_of<ty,0>::impl_type::size(value);
 }
 
 }
@@ -2914,7 +2884,7 @@ AMSG_INLINE ::std::size_t size_of(const ty& value , error_code_t& error_code)
 	::amsg::write_x<tag>(store_data,v.elem);
 
 #define AMSG_SIZE_MEMBER_X( r ,v , elem ) \
-	size += ::amsg::size_of_x<tag>(v.elem,error_code);
+	size += ::amsg::size_of_x<tag>(v.elem);
 
 #define AMSG_X(TYPE, MEMBERS,X)\
 	namespace amsg { namespace detail {\
@@ -2940,7 +2910,7 @@ struct value_write_support_impl<store_ty,TYPE,tag>	\
 struct byte_size_of_impl<TYPE,tag>	\
 {\
 	typedef TYPE value_type;\
-	static AMSG_INLINE ::std::size_t size(const value_type& value , ::amsg::error_code_t& error_code)\
+	static AMSG_INLINE ::std::size_t size(const value_type& value)\
 {\
 	::std::size_t size = 0;\
 	BOOST_PP_SEQ_FOR_EACH( AMSG_SIZE_MEMBER_X , value , MEMBERS ) \

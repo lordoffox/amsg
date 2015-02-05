@@ -37,18 +37,14 @@ int main()
     src_fix.size = 4;
     src_fix.type = 1;
 
-    amsg::error_code_t ec = amsg::success;
-    std::size_t size = amsg::size_of(src_fix, ec);
-    BOOST_ASSERT(ec == amsg::success);
+    std::size_t size = amsg::size_of(src_fix);
     BOOST_ASSERT(size == sizeof(boost::int32_t) * 2);
 
     usr::msg_header src;
     src.size = 4;
     src.type = 1;
 
-    ec = amsg::success;
-    size = amsg::size_of(src, ec);
-    BOOST_ASSERT(ec == amsg::success);
+    size = amsg::size_of(src);
     BOOST_ASSERT(size == sizeof(boost::int8_t) * 2);
   }
   catch (std::exception& ex)

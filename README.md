@@ -102,9 +102,7 @@ struct person
 AMSG(person, (name)(age));
 
 person obj;
-amsg::error_code_t ec = amsg::success;
-std::size_t size = amsg::size_of(obj, ec);
-assert(ec == amsg::success);
+std::size_t size = amsg::size_of(obj);
 std::cout << "person's serialize size: " << size << std::endl;
 ```
 
