@@ -14,11 +14,10 @@
 
 namespace amsg
 {
-  template <typename error_string_ty>
-  struct zerocopy_buffer : public basic_store
+  struct zero_copy_buffer : public basic_store
   {
   private:
-    error_string_ty		m_error_info;
+    std::string		m_error_info;
 
     unsigned char * m_header_ptr;
     unsigned char * m_read_ptr;
@@ -30,7 +29,17 @@ namespace amsg
   public:
     enum { good , read_overflow , write_overflow };
 
-    zerocopy_buffer( unsigned char * buffer , ::std::size_t length )
+    zero_copy_buffer()
+      : m_header_ptr(0)
+      , m_read_ptr(0)
+      , m_write_ptr(0)
+      , m_tail_ptr(0)
+      , m_status(good)
+      , m_length(0)
+    {
+    }
+
+    zero_copy_buffer(unsigned char * buffer, ::std::size_t length)
       : m_header_ptr(buffer)
       , m_read_ptr(buffer)
       , m_write_ptr(buffer)
@@ -40,7 +49,7 @@ namespace amsg
     {
     }
 
-    ~zerocopy_buffer()
+    ~zero_copy_buffer()
     {
     }
 
@@ -121,6 +130,17 @@ namespace amsg
       return this->m_write_ptr;
     }
 
+    AMSG_INLINE void reset(unsigned char * buffer, ::std::size_t length)
+    {
+      basic_store::clear();
+      m_header_ptr = buffer;
+      m_read_ptr = buffer;
+      m_write_ptr = buffer;
+      m_tail_ptr = buffer + length;
+      m_status = good;
+      m_length = length;
+    }
+
     AMSG_INLINE void clear()
     {
       basic_store::clear();
@@ -145,10 +165,8 @@ namespace amsg
     }
   };
 
-  typedef zerocopy_buffer<std::string> zerocopy_buffer_t;
-
   namespace detail
-{
+  {
 	template<typename store_ty , typename ty>
 	struct value_read_support_zerocopy_impl
 	{
@@ -303,11 +321,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint16_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint16_t>
 	{
 		typedef ::boost::uint16_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const int bytes = sizeof(value_type);
@@ -343,12 +361,11 @@ namespace amsg
 		}
 	};
 
-
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint16_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint16_t>
 	{
 		typedef ::boost::uint16_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(value < const_tag_as_type)
@@ -382,11 +399,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int16_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t>
 	{
 		typedef ::boost::int16_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const int bytes = sizeof(value_type);
@@ -430,11 +447,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int16_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t>
 	{
 		typedef ::boost::int16_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
@@ -475,11 +492,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint32_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint32_t>
 	{
 		typedef ::boost::uint32_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const ::std::size_t bytes = sizeof(value_type);
@@ -515,11 +532,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint32_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint32_t>
 	{
 		typedef ::boost::uint32_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(value < const_tag_as_type)
@@ -570,11 +587,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int32_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t>
 	{
 		typedef ::boost::int32_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const int bytes = sizeof(value_type);
@@ -618,11 +635,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int32_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t>
 	{
 		typedef ::boost::int32_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
@@ -680,11 +697,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint64_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint64_t>
 	{
 		typedef ::boost::uint64_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const int bytes = sizeof(value_type);
@@ -720,11 +737,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>, ::boost::uint64_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint64_t>
 	{
 		typedef ::boost::uint64_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(value < const_tag_as_type)
@@ -821,11 +838,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int64_t>
+  template <>
+	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t>
 	{
 		typedef ::boost::int64_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
 		{
 			const int bytes = sizeof(value_type);
@@ -869,11 +886,11 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty>
-	struct value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int64_t>
+  template <>
+	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t>
 	{
 		typedef ::boost::int64_t value_type;
-		typedef zerocopy_buffer<error_string_ty> store_ty;
+		typedef zero_copy_buffer store_ty;
 		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
 		{
 			if(0 <= value && value < const_tag_as_type)
@@ -977,123 +994,123 @@ namespace amsg
 		}
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::uint8_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::uint8_t,tag>
 	{
-		typedef value_read_unsigned_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint8_t> impl_type;
+		typedef value_read_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::uint8_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::uint8_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::uint8_t,tag>
 	{
-		typedef value_write_unsigned_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint8_t> impl_type;
+		typedef value_write_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::uint8_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::int8_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::int8_t,tag>
 	{
-		typedef value_read_signed_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int8_t> impl_type;
+		typedef value_read_signed_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::int8_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::int8_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::int8_t,tag>
 	{
-		typedef value_write_signed_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int8_t> impl_type;
+		typedef value_write_signed_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::int8_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,char,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,char,tag>
 	{
 		typedef char value_type;
 		typedef typename ::boost::mpl::if_<
 			::boost::is_signed<value_type>,
-			value_read_signed_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,value_type>,
-			value_read_unsigned_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,value_type>
+			value_read_signed_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>,
+			value_read_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>
 		>::type impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,char,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,char,tag>
 	{
 		typedef char value_type;
 		typedef typename ::boost::mpl::if_<
 			::boost::is_signed<value_type>,
-			value_write_signed_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,value_type>,
-			value_write_unsigned_char_like_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,value_type>
+			value_write_signed_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>,
+			value_write_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>
 		>::type impl_type;
 	};
 
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::uint16_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::uint16_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint16_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint16_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::uint16_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::uint16_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint16_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint16_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::int16_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::int16_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int16_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::int16_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::int16_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int16_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::uint32_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::uint32_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint32_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint32_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::uint32_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::uint32_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint32_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint32_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::int32_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::int32_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int32_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::int32_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::int32_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int32_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::uint64_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::uint64_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint64_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint64_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::uint64_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::uint64_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::uint64_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint64_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_read_support<zerocopy_buffer<error_string_ty>,::boost::int64_t,tag>
+	template<int tag>
+	struct value_read_support<zero_copy_buffer,::boost::int64_t,tag>
 	{
-		typedef value_read_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int64_t> impl_type;
+		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t> impl_type;
 	};
 
-	template<typename error_string_ty , int tag>
-	struct value_write_support<zerocopy_buffer<error_string_ty>,::boost::int64_t,tag>
+	template<int tag>
+	struct value_write_support<zero_copy_buffer,::boost::int64_t,tag>
 	{
-		typedef value_write_support_zerocopy_impl<zerocopy_buffer<error_string_ty>,::boost::int64_t> impl_type;
+		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t> impl_type;
 	};
 
 
