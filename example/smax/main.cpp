@@ -55,7 +55,8 @@ int main()
     src.age = 33;
     src.married = true;
 
-    amsg::zero_copy_buffer writer(buf, ENOUGH_SIZE);
+    amsg::zero_copy_buffer writer;
+    writer.set_write(buf, ENOUGH_SIZE);
     amsg::write(writer, src);
     BOOST_ASSERT(writer.bad());
 
@@ -69,7 +70,8 @@ int main()
 
     usr::person des;
 
-    amsg::zero_copy_buffer reader(buf, ENOUGH_SIZE);
+    amsg::zero_copy_buffer reader;
+    reader.set_read(buf, ENOUGH_SIZE);
     amsg::read(reader, des);
     BOOST_ASSERT(reader.bad());
   }
