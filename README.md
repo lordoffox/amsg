@@ -37,14 +37,16 @@ person src;
 src.name = "lordoffox"
 src.age = 33
 
-amsg::zero_copy_buffer writer(buf, ENOUGH_SIZE);
+amsg::zero_copy_buffer writer;
+writer.set_write(buf, ENOUGH_SIZE);
 amsg::write(writer, src);
 assert(!writer.bad());
 
 // deserialize
 person des;
 
-amsg::zero_copy_buffer reader(buf, ENOUGH_SIZE);
+amsg::zero_copy_buffer reader;
+reader.set_read(buf, ENOUGH_SIZE);
 amsg::read(reader, des);
 assert(!reader.bad());
 
@@ -77,7 +79,8 @@ Define AMSG_STD_CXX11 in your project or just before include amsg hpps
 
 std::forward_list<int> fwd_list = {1,2,3,4,5};
 unsigned char buf[4096];
-amsg::zero_copy_buffer writer(buf, 4096);
+amsg::zero_copy_buffer writer;
+writer.set_write(buf, 4096);
 amsg::write(writer, fwd_list);
 assert(!writer.bad());
 ```
