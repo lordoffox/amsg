@@ -19,38 +19,56 @@ namespace amsg
   private:
     std::string		m_error_info;
 
-    unsigned char * m_header_ptr;
-    unsigned char * m_read_ptr;
-    unsigned char * m_write_ptr;
-    unsigned char * m_tail_ptr;
+    unsigned char const* m_read_header_ptr;
+    unsigned char* m_write_header_ptr;
+    unsigned char const* m_read_ptr;
+    unsigned char* m_write_ptr;
+    unsigned char const* m_read_tail_ptr;
+    unsigned char const* m_write_tail_ptr;
     int							m_status;
-    std::size_t			m_length;
 
   public:
     enum { good , read_overflow , write_overflow };
 
     zero_copy_buffer()
-      : m_header_ptr(0)
+      : m_read_header_ptr(0)
+      , m_write_header_ptr(0)
       , m_read_ptr(0)
       , m_write_ptr(0)
-      , m_tail_ptr(0)
+      , m_read_tail_ptr(0)
+      , m_write_tail_ptr(0)
       , m_status(good)
-      , m_length(0)
-    {
-    }
-
-    zero_copy_buffer(unsigned char * buffer, ::std::size_t length)
-      : m_header_ptr(buffer)
-      , m_read_ptr(buffer)
-      , m_write_ptr(buffer)
-      , m_tail_ptr(buffer+length)
-      , m_status(good)
-      , m_length(length)
     {
     }
 
     ~zero_copy_buffer()
     {
+    }
+
+    AMSG_INLINE void set_read(unsigned char const* buffer, ::std::size_t length)
+    {
+      this->m_read_header_ptr = buffer;
+      this->m_read_ptr = this->m_read_header_ptr;
+      this->m_read_tail_ptr = this->m_read_header_ptr + length;
+      this->m_status = good;
+    }
+
+    AMSG_INLINE void set_read(char const* buffer, ::std::size_t length)
+    {
+      set_read((unsigned char const*)buffer, length);
+    }
+
+    AMSG_INLINE void set_write(unsigned char* buffer, ::std::size_t length)
+    {
+      this->m_write_header_ptr = buffer;
+      this->m_write_ptr = this->m_write_header_ptr;
+      this->m_write_tail_ptr = this->m_write_header_ptr + length;
+      this->m_status = good;
+    }
+
+    AMSG_INLINE void set_write(char* buffer, ::std::size_t length)
+    {
+      set_write((unsigned char*)buffer, length);
     }
 
     void append_debug_info(const char * info)
@@ -60,19 +78,19 @@ namespace amsg
 
     std::size_t read(char * buffer,std::size_t len)
     {
-      if(this->m_read_ptr + len > this->m_tail_ptr)
+      if (this->m_read_ptr + len > this->m_read_tail_ptr)
       {
-        m_status = read_overflow;
+        this->m_status = read_overflow;
         return 0;
       }
-      std::memcpy(buffer,this->m_read_ptr,len);
+      std::memcpy(buffer, this->m_read_ptr, len);
       this->m_read_ptr += len;
       return len;
     }
 
     unsigned char get_char()
     {
-      if(this->m_read_ptr + 1 > this->m_tail_ptr)
+      if (this->m_read_ptr + 1 > this->m_read_tail_ptr)
       {
         m_status = read_overflow;
         return 0;
@@ -82,25 +100,23 @@ namespace amsg
 
     std::size_t write(const char * buffer,std::size_t len)
     {
-      std::size_t writed_len = this->m_write_ptr + len - this->m_header_ptr;
-      if(writed_len > this->m_length)
+      if (this->m_write_ptr + len > this->m_write_tail_ptr)
       {
-        m_status = write_overflow;
+        this->m_status = write_overflow;
         return 0;
       }
-      std::memcpy((void*)this->m_write_ptr,buffer,len);
+      std::memcpy((void*)this->m_write_ptr, buffer, len);
       this->m_write_ptr += len;
       return len;
     }
 
     bool bad(){ return m_status != good || basic_store::error(); }
 
-    unsigned char * append_write(std::size_t len)
+    AMSG_INLINE unsigned char * append_write(std::size_t len)
     {
-      std::size_t writed_len = (::std::size_t)(this->m_write_ptr + len - this->m_header_ptr);
-      if(writed_len > this->m_length)
+      if (this->m_write_ptr + len > this->m_write_tail_ptr)
       {
-        m_status = write_overflow;
+        this->m_status = write_overflow;
         return 0;
       }
       unsigned char * append_ptr = this->m_write_ptr;
@@ -108,60 +124,55 @@ namespace amsg
       return append_ptr;
     }
 
-    AMSG_INLINE unsigned char * skip_read(std::size_t len)
+    AMSG_INLINE unsigned char const* skip_read(std::size_t len)
     {
-      if(this->m_read_ptr + len > this->m_tail_ptr)
+      if (this->m_read_ptr + len > this->m_read_tail_ptr)
       {
-        m_status = read_overflow;
-        return this->m_read_ptr;
+        this->m_status = read_overflow;
+        return NULL;
       }
-      unsigned char * skip_ptr = this->m_read_ptr;
+      unsigned char const* ptr = this->m_read_ptr;
       this->m_read_ptr += len;
-      return skip_ptr;
+      return ptr;
     }
 
-    AMSG_INLINE const unsigned char * read_ptr()
-    {
-      return this->m_read_ptr;
-    }
-
-    AMSG_INLINE unsigned char * write_ptr()
-    {
-      return this->m_write_ptr;
-    }
-
-    AMSG_INLINE void reset(unsigned char * buffer, ::std::size_t length)
+    AMSG_INLINE void clear_write()
     {
       basic_store::clear();
-      m_header_ptr = buffer;
-      m_read_ptr = buffer;
-      m_write_ptr = buffer;
-      m_tail_ptr = buffer + length;
-      m_status = good;
-      m_length = length;
+      this->m_write_ptr = this->m_write_header_ptr;
     }
 
     AMSG_INLINE void clear()
     {
       basic_store::clear();
-      this->m_read_ptr = this->m_header_ptr;
-      this->m_write_ptr = this->m_header_ptr;
+      this->m_read_ptr = this->m_read_header_ptr;
+      this->m_write_ptr = this->m_write_header_ptr;
       m_status = good;
     }
 
-    AMSG_INLINE const unsigned char * data() const
+    AMSG_INLINE unsigned char const* read_ptr() const
     {
-      return this->m_header_ptr;
+      return this->m_read_ptr;
+    }
+
+    AMSG_INLINE unsigned char* write_ptr() const
+    {
+      return this->m_write_ptr;
+    }
+
+    AMSG_INLINE unsigned char* write_data() const
+    {
+      return this->m_write_header_ptr;
     }
 
     AMSG_INLINE ::std::size_t read_length() const
     {
-      return this->m_read_ptr - this->m_header_ptr;
+      return this->m_read_ptr - this->m_write_header_ptr;
     }
 
     AMSG_INLINE ::std::size_t write_length() const
     {
-      return this->m_write_ptr - this->m_header_ptr;
+      return this->m_write_ptr - this->m_write_header_ptr;
     }
   };
 

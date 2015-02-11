@@ -49,14 +49,15 @@ private:
   static void test_basic(T src)
   {
     unsigned char buf[ENOUGH_SIZE];
-    amsg::zero_copy_buffer buffer(buf, ENOUGH_SIZE);
+    amsg::zero_copy_buffer buffer;
+    buffer.set_write(buf, ENOUGH_SIZE);
 
     // serialize
     amsg::write(buffer, src);
     BOOST_ASSERT(!buffer.bad());
 
     // deserialize
-    buffer.reset(buf, ENOUGH_SIZE);
+    buffer.set_read(buf, ENOUGH_SIZE);
     T des = T();
 
     amsg::read(buffer, des);
@@ -167,14 +168,16 @@ private:
       src.age = 33;
       src.married = true;
 
-      amsg::zero_copy_buffer writer(buf, ENOUGH_SIZE);
+      amsg::zero_copy_buffer writer;
+      writer.set_write(buf, ENOUGH_SIZE);
       amsg::write(writer, src);
       BOOST_ASSERT(!writer.bad());
 
       // deserialize
       usr::person des;
 
-      amsg::zero_copy_buffer reader(buf, ENOUGH_SIZE);
+      amsg::zero_copy_buffer reader;
+      reader.set_read(buf, ENOUGH_SIZE);
       amsg::read(reader, des);
       BOOST_ASSERT(!reader.bad());
 
