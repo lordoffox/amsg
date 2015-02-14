@@ -129,7 +129,7 @@ namespace amsg
       if (this->m_read_ptr + len > this->m_read_tail_ptr)
       {
         this->m_status = read_overflow;
-        return NULL;
+        return 0;
       }
       unsigned char const* ptr = this->m_read_ptr;
       this->m_read_ptr += len;
@@ -167,7 +167,7 @@ namespace amsg
 
     AMSG_INLINE ::std::size_t read_length() const
     {
-      return this->m_read_ptr - this->m_write_header_ptr;
+      return this->m_read_ptr - this->m_read_header_ptr;
     }
 
     AMSG_INLINE ::std::size_t write_length() const
