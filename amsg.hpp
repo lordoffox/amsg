@@ -332,7 +332,7 @@ namespace amsg{	namespace detail
 			}
 			else
 			{
-				if(value < 0100)
+				if(value < 0x100)
 				{
 					return 2;
 				}
@@ -381,7 +381,7 @@ namespace amsg{	namespace detail
 			}
 			else
 			{
-				if(value < 0100)
+				if(value < 0x100)
 				{
 					return 2;
 				}
@@ -446,7 +446,7 @@ namespace amsg{	namespace detail
 			}
 			else
 			{
-				if(value < 0100)
+				if(value < 0x100)
 				{
 					return 2;
 				}
