@@ -1,5 +1,5 @@
 ﻿///
-/// Copyright (c) 2012 Ning Ding (lordoffox@gmail.com)
+/// Copyright (c) 2012 - 2015 Ning Ding (lordoffox@gmail.com)
 ///
 /// Distributed under the Boost Software License, Version 1.0. (See accompanying
 /// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,7 +17,7 @@ namespace amsg
   struct zero_copy_buffer : public basic_store
   {
   private:
-    std::string		m_error_info;
+    ::std::string		m_error_info;
 
     unsigned char const* m_read_header_ptr;
     unsigned char* m_write_header_ptr;
@@ -28,7 +28,7 @@ namespace amsg
     int							m_status;
 
   public:
-    enum { good , read_overflow , write_overflow };
+    enum { good, read_overflow, write_overflow };
 
     zero_copy_buffer()
       : m_read_header_ptr(0)
@@ -76,14 +76,14 @@ namespace amsg
       m_error_info.append(info);
     }
 
-    std::size_t read(char * buffer,std::size_t len)
+    ::std::size_t read(char * buffer, ::std::size_t len)
     {
       if (this->m_read_ptr + len > this->m_read_tail_ptr)
       {
         this->m_status = read_overflow;
         return 0;
       }
-      std::memcpy(buffer, this->m_read_ptr, len);
+      ::std::memcpy(buffer, this->m_read_ptr, len);
       this->m_read_ptr += len;
       return len;
     }
@@ -98,21 +98,21 @@ namespace amsg
       return *m_read_ptr++;
     }
 
-    std::size_t write(const char * buffer,std::size_t len)
+    ::std::size_t write(const char * buffer, ::std::size_t len)
     {
       if (this->m_write_ptr + len > this->m_write_tail_ptr)
       {
         this->m_status = write_overflow;
         return 0;
       }
-      std::memcpy((void*)this->m_write_ptr, buffer, len);
+      ::std::memcpy((void*)this->m_write_ptr, buffer, len);
       this->m_write_ptr += len;
       return len;
     }
 
     bool bad(){ return m_status != good || basic_store::error(); }
 
-    AMSG_INLINE unsigned char * append_write(std::size_t len)
+    AMSG_INLINE unsigned char * append_write(::std::size_t len)
     {
       if (this->m_write_ptr + len > this->m_write_tail_ptr)
       {
@@ -124,7 +124,7 @@ namespace amsg
       return append_ptr;
     }
 
-    AMSG_INLINE unsigned char const* skip_read(std::size_t len)
+    AMSG_INLINE unsigned char const* skip_read(::std::size_t len)
     {
       if (this->m_read_ptr + len > this->m_read_tail_ptr)
       {
@@ -165,966 +165,526 @@ namespace amsg
       return this->m_write_header_ptr;
     }
 
-    AMSG_INLINE ::std::size_t read_length() const
+    AMSG_INLINE::std::size_t read_length() const
     {
       return this->m_read_ptr - this->m_read_header_ptr;
     }
 
-    AMSG_INLINE ::std::size_t write_length() const
+    AMSG_INLINE::std::size_t write_length() const
     {
       return this->m_write_ptr - this->m_write_header_ptr;
     }
   };
 
-  namespace detail
+  template<std::size_t size>
+  struct le_pos;
+
+#if defined(__LITTLE_ENDIAN__)
+  template<std::size_t size>
+  struct le_pos
   {
-	template<typename store_ty , typename ty>
-	struct value_read_support_zerocopy_impl
-	{
-		typedef ty value_type;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value);
-	};
+    enum
+    {
+      pos0,
+      pos1,
+      pos2,
+      pos3,
+      pos4,
+      pos5,
+      pos6,
+      pos7,
+    };
+  };
+#else
+  template<>
+  struct le_pos < 1 >
+  {
+    enum
+    {
+      pos7,
+      pos6,
+      pos5,
+      pos4,
+      pos3,
+      pos2,
+      pos1,
+      pos0 = 0,
+    };
+  };
+  template<>
+  struct le_pos < 2 >
+  {
+    enum
+    {
+      pos7,
+      pos6,
+      pos5,
+      pos4,
+      pos3,
+      pos2,
+      pos1 = 0,
+      pos0,
+    };
+  };
 
-	template<typename store_ty , typename ty>
-	struct value_write_support_zerocopy_impl
-	{
-		typedef ty value_type;
-		static AMSG_INLINE void write(store_ty& store_data, value_type& value);
-	};
+  template<>
+  struct le_pos < 4 >
+  {
+    enum
+    {
+      pos7,
+      pos6,
+      pos5,
+      pos4,
+      pos3 = 0,
+      pos2,
+      pos1,
+      pos0,
+    };
+  };
 
-	template<typename store_ty,typename char_like_ty>
-	struct value_read_unsigned_char_like_support_zerocopy_impl
-	{
-		typedef char_like_ty value_type;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			value = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(value > const_tag_as_value)
-			{
-				if((long)value & const_negative_bit_value)
-				{
-					store_data.set_error_code(negative_assign_to_unsigned_integer_number);
-					return;
+  template<>
+  struct le_pos < 8 >
+  {
+    enum
+    {
+      pos7,
+      pos6,
+      pos5,
+      pos4,
+      pos3,
+      pos2,
+      pos1,
+      pos0,
+    };
+  };
+#endif
 
-				}
-				int read_bytes = (value & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_signed<value_type>::value && ::std::is_integral<value_type>::value, void>::type
+    read(zero_copy_buffer& stream, value_type& value)
+  {
+    const int bytes = sizeof(value_type);
+    uint8_t tag = stream.get_char();
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    if (tag > const_tag_as_value)
+    {
+      int sign = 1;
+      if ((long)tag & const_negative_bit_value)
+      {
+        sign = -1;
+      }
+      int read_bytes = (int(tag) & const_interger_byte_msak) + 1;
+      if (bytes < read_bytes)
+      {
+        stream.m_error_code = value_too_large_to_integer_number;
+        return;
+      }
+      value = 0;
+      uint8_t const* read_ptr = stream.skip_read(read_bytes);
+      if (stream.bad())
+      {
+        stream.m_error_code = stream_buffer_overflow;
+        return;
+      }
+      uint8_t * value_ptr = (uint8_t *)&value;
+      value = 0;
+      switch (read_bytes)
+      {
+      case 8:value_ptr[7] = read_ptr[le_pos<bytes>::pos7];
+      case 7:value_ptr[6] = read_ptr[le_pos<bytes>::pos6];
+      case 6:value_ptr[5] = read_ptr[le_pos<bytes>::pos5];
+      case 5:value_ptr[4] = read_ptr[le_pos<bytes>::pos4];
+      case 4:value_ptr[3] = read_ptr[le_pos<bytes>::pos3];
+      case 3:value_ptr[2] = read_ptr[le_pos<bytes>::pos2];
+      case 2:value_ptr[1] = read_ptr[le_pos<bytes>::pos1];
+      case 1:value_ptr[0] = read_ptr[le_pos<bytes>::pos0];
+      }
+      if (sign < 0)
+      {
+        value = -value;
+      }
+    }
+    else
+    {
+      value = tag;
+    }
+  }
 
-				}
-				value = store_data.get_char();
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-			}
-		}
-	};
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_signed<value_type>::value && ::std::is_integral<value_type>::value, void>::type
+    write(zero_copy_buffer& stream, const value_type& value)
+  {
+    const int bytes = sizeof(value_type);
+    int write_bytes = 1;
+    uint8_t write_buff[12];
+    if (0 <= value && value < const_tag_as_type)
+    {
+      write_buff[0] = (uint8_t)value;
+    }
+    else
+    {
+      uint8_t negative_bit = 0;
+      value_type temp = value;
+      if (value < 0)
+      {
+        negative_bit = const_negative_bit_value;
+        temp = -value;
+      }
+      uint8_t * ptr = (uint8_t *)&temp;
+      if (temp < 0x100)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_bytes = 2;
+      }
+      else if (temp < 0x10000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_bytes = 3;
+      }
+      else if (temp < 0x1000000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_bytes = 4;
+      }
+      else if (temp < 0x100000000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_buff[4] = ptr[le_pos<bytes>::pos3];
+        write_bytes = 5;
+      }
+      else if (temp < 0x10000000000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_buff[4] = ptr[le_pos<bytes>::pos3];
+        write_buff[5] = ptr[le_pos<bytes>::pos4];
+        write_bytes = 6;
+      }
+      else if (temp < 0x1000000000000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_buff[4] = ptr[le_pos<bytes>::pos3];
+        write_buff[5] = ptr[le_pos<bytes>::pos4];
+        write_buff[6] = ptr[le_pos<bytes>::pos5];
+        write_bytes = 7;
+      }
+      else if (temp < 0x100000000000000)
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_buff[4] = ptr[le_pos<bytes>::pos3];
+        write_buff[5] = ptr[le_pos<bytes>::pos4];
+        write_buff[6] = ptr[le_pos<bytes>::pos5];
+        write_buff[7] = ptr[le_pos<bytes>::pos6];
+        write_bytes = 8;
+      }
+      else
+      {
+        write_buff[1] = ptr[le_pos<bytes>::pos0];
+        write_buff[2] = ptr[le_pos<bytes>::pos1];
+        write_buff[3] = ptr[le_pos<bytes>::pos2];
+        write_buff[4] = ptr[le_pos<bytes>::pos3];
+        write_buff[5] = ptr[le_pos<bytes>::pos4];
+        write_buff[6] = ptr[le_pos<bytes>::pos5];
+        write_buff[7] = ptr[le_pos<bytes>::pos6];
+        write_buff[8] = ptr[le_pos<bytes>::pos7];
+        write_bytes = 9;
+      }
+      write_buff[0] = (uint8_t)(const_store_postive_integer_byte_mask + negative_bit + write_bytes);
+    }
+    stream.write((char*)write_buff, write_bytes);
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+  }
 
-	template<typename store_ty,typename char_like_ty>
-	struct value_write_unsigned_char_like_support_zerocopy_impl
-	{
-		typedef char_like_ty value_type;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = value;
-			}
-			else
-			{
-				::boost::uint8_t * ptr = store_data.append_write(2);
-				ptr[0] = 0x80;
-				ptr[1] = value;
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_unsigned<value_type>::value && ::std::is_integral<value_type>::value, void>::type
+    read(zero_copy_buffer& stream, value_type& value)
+  {
+    const int bytes = sizeof(value_type);
+    value = stream.get_char();
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    if (value > const_tag_as_value)
+    {
+      if ((long)value & const_negative_bit_value)
+      {
+        stream.m_error_code = negative_assign_to_unsigned_integer_number;
+        return;
+      }
+      int read_bytes = (int)(value & const_interger_byte_msak) + 1;
+      if (bytes < read_bytes)
+      {
+        stream.m_error_code = value_too_large_to_integer_number;
+        return;
+      }
+      uint8_t const* read_ptr = stream.skip_read(read_bytes);
+      if (stream.bad())
+      {
+        stream.m_error_code = stream_buffer_overflow;
+        return;
+      }
+      uint8_t * value_ptr = (uint8_t *)&value;
+      value = 0;
+      switch (read_bytes)
+      {
+      case 8:value_ptr[7] = read_ptr[le_pos<bytes>::pos7];
+      case 7:value_ptr[6] = read_ptr[le_pos<bytes>::pos6];
+      case 6:value_ptr[5] = read_ptr[le_pos<bytes>::pos5];
+      case 5:value_ptr[4] = read_ptr[le_pos<bytes>::pos4];
+      case 4:value_ptr[3] = read_ptr[le_pos<bytes>::pos3];
+      case 3:value_ptr[2] = read_ptr[le_pos<bytes>::pos2];
+      case 2:value_ptr[1] = read_ptr[le_pos<bytes>::pos1];
+      case 1:value_ptr[0] = read_ptr[le_pos<bytes>::pos0];
+      }
+    }
+  }
 
-	template<typename store_ty,typename char_like_ty>
-	struct value_read_signed_char_like_support_zerocopy_impl
-	{
-		typedef char_like_ty value_type;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			::boost::uint8_t tag = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(tag > const_tag_as_value)
-			{
-				int sign = 1;
-				if((long)tag & const_negative_bit_value)
-				{
-					sign = -1;
-				}
-				int read_bytes = (int(tag) & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_unsigned<value_type>::value && ::std::is_integral<value_type>::value, void>::type
+    write(zero_copy_buffer& stream, const value_type& value)
+  {
+    const int bytes = sizeof(value_type);
+    if (value < const_tag_as_type)
+    {
+      uint8_t * ptr = stream.append_write(1);
+      *ptr = (uint8_t)value;
+    }
+    else
+    {
+      uint8_t * ptr = (uint8_t *)(&value);
+      if (value < 0x100)
+      {
+        uint8_t * wptr = stream.append_write(2);
+        wptr[0] = 0x80;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+      }
+      else if (value < 0x10000)
+      {
+        uint8_t * wptr = stream.append_write(3);
+        wptr[0] = 0x81;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+      }
+      else if (value < 0x1000000)
+      {
+        uint8_t * wptr = stream.append_write(4);
+        wptr[0] = 0x82;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+      }
+      else if (value < 0x100000000)
+      {
+        uint8_t * wptr = stream.append_write(5);
+        wptr[0] = 0x83;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+        wptr[4] = ptr[le_pos<bytes>::pos3];
+      }
+      else if (value < 0x10000000000LL)
+      {
+        uint8_t * wptr = stream.append_write(6);
+        wptr[0] = 0x84;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+        wptr[4] = ptr[le_pos<bytes>::pos3];
+        wptr[5] = ptr[le_pos<bytes>::pos4];
+      }
+      else if (value < 0x1000000000000LL)
+      {
+        uint8_t * wptr = stream.append_write(7);
+        wptr[0] = 0x85;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+        wptr[4] = ptr[le_pos<bytes>::pos3];
+        wptr[5] = ptr[le_pos<bytes>::pos4];
+        wptr[6] = ptr[le_pos<bytes>::pos5];
+      }
+      else if (value < 0x100000000000000LL)
+      {
+        uint8_t * wptr = stream.append_write(8);
+        wptr[0] = 0x86;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+        wptr[4] = ptr[le_pos<bytes>::pos3];
+        wptr[5] = ptr[le_pos<bytes>::pos4];
+        wptr[6] = ptr[le_pos<bytes>::pos5];
+        wptr[7] = ptr[le_pos<bytes>::pos6];
+      }
+      else
+      {
+        uint8_t * wptr = stream.append_write(9);
+        wptr[0] = 0x87;
+        wptr[1] = ptr[le_pos<bytes>::pos0];
+        wptr[2] = ptr[le_pos<bytes>::pos1];
+        wptr[3] = ptr[le_pos<bytes>::pos2];
+        wptr[4] = ptr[le_pos<bytes>::pos3];
+        wptr[5] = ptr[le_pos<bytes>::pos4];
+        wptr[6] = ptr[le_pos<bytes>::pos5];
+        wptr[7] = ptr[le_pos<bytes>::pos6];
+        wptr[8] = ptr[le_pos<bytes>::pos7];
+      }
+    }
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+  }
 
-				}
-				value = store_data.get_char();
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				if(sign < 0)
-				{
-					value = -value;
-				}
-			}
-			else
-			{
-				value = tag;
-			}
-		}
-	};
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_integral<value_type>::value, void>::type
+    read(zero_copy_buffer& store_data, const sfix_op<value_type>& value)
+  {
+    uint8_t * read_ptr = (uint8_t *)store_data.skip_read(sizeof(value_type));
+    uint8_t * value_ptr = (uint8_t *)&value.val;
+    if (store_data.bad())
+    {
+      store_data.set_error_code(stream_buffer_overflow);
+      return;
+    }
+    const int bytes = sizeof(value_type);
+    switch (bytes)
+    {
+    case 8:value_ptr[7] = read_ptr[le_pos<bytes>::pos7];
+    case 7:value_ptr[6] = read_ptr[le_pos<bytes>::pos6];
+    case 6:value_ptr[5] = read_ptr[le_pos<bytes>::pos5];
+    case 5:value_ptr[4] = read_ptr[le_pos<bytes>::pos4];
+    case 4:value_ptr[3] = read_ptr[le_pos<bytes>::pos3];
+    case 3:value_ptr[2] = read_ptr[le_pos<bytes>::pos2];
+    case 2:value_ptr[1] = read_ptr[le_pos<bytes>::pos1];
+    case 1:value_ptr[0] = read_ptr[le_pos<bytes>::pos0];
+    }
+  }
 
-	template<typename store_ty,typename char_like_ty>
-	struct value_write_signed_char_like_support_zerocopy_impl
-	{
-		typedef char_like_ty value_type;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(0 <= value && value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = value;
-			}
-			else
-			{
-				::boost::uint8_t negative_bit = 0;
-				value_type temp = value;
-				if(value < 0)
-				{
-					negative_bit = const_negative_bit_value;
-					temp = -value;
-				}
-				::boost::uint8_t * ptr = store_data.append_write(2);
-				ptr[0] = 0x80|negative_bit;
-				ptr[1] = temp;
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
+  template<typename value_type>
+  AMSG_INLINE
+    typename ::std::enable_if<::std::is_integral<value_type>::value, void>::type
+    write(zero_copy_buffer& store_data, const sfix_op<value_type>& value)
+  {
+    uint8_t * write_ptr = store_data.append_write(sizeof(value_type));
+    uint8_t * value_ptr = (uint8_t *)&value.val;
+    if (store_data.bad())
+    {
+      store_data.set_error_code(stream_buffer_overflow);
+      return;
+    }
+    const int bytes = sizeof(value_type);
+    switch (bytes)
+    {
+    case 8:write_ptr[7] = value_ptr[le_pos<bytes>::pos7];
+    case 7:write_ptr[6] = value_ptr[le_pos<bytes>::pos6];
+    case 6:write_ptr[5] = value_ptr[le_pos<bytes>::pos5];
+    case 5:write_ptr[4] = value_ptr[le_pos<bytes>::pos4];
+    case 4:write_ptr[3] = value_ptr[le_pos<bytes>::pos3];
+    case 3:write_ptr[2] = value_ptr[le_pos<bytes>::pos2];
+    case 2:write_ptr[1] = value_ptr[le_pos<bytes>::pos1];
+    case 1:write_ptr[0] = value_ptr[le_pos<bytes>::pos0];
+    }
+  }
 
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint16_t>
-	{
-		typedef ::boost::uint16_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			value = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(value > const_tag_as_value)
-			{
-				if((long)value & const_negative_bit_value)
-				{
-					store_data.set_error_code(negative_assign_to_unsigned_integer_number);
-					return;
+  AMSG_INLINE void read(zero_copy_buffer& stream, float& value)
+  {
+    typedef float value_type;
+    uint8_t const* read_ptr = stream.skip_read(sizeof(value_type));
+    uint8_t * value_ptr = (uint8_t *)&value;
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    value_ptr[le_pos<4>::pos0] = read_ptr[0];
+    value_ptr[le_pos<4>::pos1] = read_ptr[1];
+    value_ptr[le_pos<4>::pos2] = read_ptr[2];
+    value_ptr[le_pos<4>::pos3] = read_ptr[3];
+  }
 
-				}
-				int read_bytes = (int(value) & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
+  AMSG_INLINE void write(zero_copy_buffer& stream, const float& value)
+  {
+    typedef float value_type;
+    uint8_t * write_ptr = stream.append_write(sizeof(value_type));
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    uint8_t * value_ptr = (uint8_t *)&value;
+    write_ptr[le_pos<4>::pos0] = value_ptr[0];
+    write_ptr[le_pos<4>::pos1] = value_ptr[1];
+    write_ptr[le_pos<4>::pos2] = value_ptr[2];
+    write_ptr[le_pos<4>::pos3] = value_ptr[3];
+  }
 
-				}
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host16(value);
-			}
-		}
-	};
+  AMSG_INLINE void read(zero_copy_buffer& stream, double& value)
+  {
+    typedef double value_type;
+    uint8_t const* read_ptr = stream.skip_read(sizeof(value_type));
+    uint8_t * value_ptr = (uint8_t *)&value;
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    value_ptr[le_pos<8>::pos0] = read_ptr[0];
+    value_ptr[le_pos<8>::pos1] = read_ptr[1];
+    value_ptr[le_pos<8>::pos2] = read_ptr[2];
+    value_ptr[le_pos<8>::pos3] = read_ptr[3];
+    value_ptr[le_pos<8>::pos4] = read_ptr[4];
+    value_ptr[le_pos<8>::pos5] = read_ptr[5];
+    value_ptr[le_pos<8>::pos6] = read_ptr[6];
+    value_ptr[le_pos<8>::pos7] = read_ptr[7];
+  }
 
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint16_t>
-	{
-		typedef ::boost::uint16_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				value_type temp = host_to_little_endian16(value);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp);
-				if(value < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80;
-					wptr[1] = ptr[0];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
+  AMSG_INLINE void write(zero_copy_buffer& stream, const double& value)
+  {
+    typedef double value_type;
+    uint8_t * write_ptr = stream.append_write(sizeof(value_type));
+    if (stream.bad())
+    {
+      stream.m_error_code = stream_buffer_overflow;
+      return;
+    }
+    uint8_t * value_ptr = (uint8_t *)&value;
+    write_ptr[le_pos<8>::pos0] = value_ptr[0];
+    write_ptr[le_pos<8>::pos1] = value_ptr[1];
+    write_ptr[le_pos<8>::pos2] = value_ptr[2];
+    write_ptr[le_pos<8>::pos3] = value_ptr[3];
+    write_ptr[le_pos<8>::pos4] = value_ptr[4];
+    write_ptr[le_pos<8>::pos5] = value_ptr[5];
+    write_ptr[le_pos<8>::pos6] = value_ptr[6];
+    write_ptr[le_pos<8>::pos7] = value_ptr[7];
+  }
 
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t>
-	{
-		typedef ::boost::int16_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			::boost::uint8_t tag = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(tag > const_tag_as_value)
-			{
-				int sign = 1;
-				if((long)tag & const_negative_bit_value)
-				{
-					sign = -1;
-				}
-				int read_bytes = (int(tag) & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
-
-				}
-				value = 0;
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host16(value);
-				if(sign < 0)
-				{
-					value = -value;
-				}
-			}
-			else
-			{
-				value = tag;
-			}
-		}
-	};
-
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t>
-	{
-		typedef ::boost::int16_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(0 <= value && value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				::boost::uint8_t negative_bit = 0;
-				value_type temp = value;
-				if(value < 0)
-				{
-					negative_bit = const_negative_bit_value;
-					temp = -value;
-				}
-				value_type temp1 = host_to_little_endian16(temp);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp1);
-				if(temp < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80+negative_bit;
-					wptr[1] = ptr[0];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
-
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint32_t>
-	{
-		typedef ::boost::uint32_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const ::std::size_t bytes = sizeof(value_type);
-			value = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(value > const_tag_as_value)
-			{
-				if((long)value & const_negative_bit_value)
-				{
-					store_data.set_error_code(negative_assign_to_unsigned_integer_number);
-					return;
-
-				}
-				::std::size_t read_bytes = (::std::size_t)(value & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
-
-				}
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host32(value);
-			}
-		}
-	};
-
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint32_t>
-	{
-		typedef ::boost::uint32_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				value_type temp = host_to_little_endian32(value);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp);
-				if(value < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80;
-					wptr[1] = ptr[0];
-				}
-				else if(value < 0x10000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-				else if(value < 0x1000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(4);
-					wptr[0] = 0x82;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(5);
-					wptr[0] = 0x83;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
-
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t>
-	{
-		typedef ::boost::int32_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			::boost::uint8_t tag = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(tag > const_tag_as_value)
-			{
-				int sign = 1;
-				if((long)tag & const_negative_bit_value)
-				{
-					sign = -1;
-				}
-				int read_bytes = (int(tag) & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
-
-				}
-				value = 0;
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host32(value);
-				if(sign < 0)
-				{
-					value = -value;
-				}
-			}
-			else
-			{
-				value = tag;
-			}
-		}
-	};
-
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t>
-	{
-		typedef ::boost::int32_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(0 <= value && value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				::boost::uint8_t negative_bit = 0;
-				value_type temp = value;
-				if(value < 0)
-				{
-					negative_bit = const_negative_bit_value;
-					temp = -value;
-				}
-				value_type temp1 = host_to_little_endian32(temp);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp1);
-				if(temp < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80+negative_bit;
-					wptr[1] = ptr[0];
-				}
-				else if(temp < 0x10000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-				else if(temp < 0x1000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(4);
-					wptr[0] = 0x82+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(5);
-					wptr[0] = 0x83+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
-
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer, ::boost::uint64_t>
-	{
-		typedef ::boost::uint64_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			value = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(value > const_tag_as_value)
-			{
-				if((long)value & const_negative_bit_value)
-				{
-					store_data.set_error_code(negative_assign_to_unsigned_integer_number);
-					return;
-
-				}
-				int read_bytes = (int)(value & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
-
-				}
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host64(value);
-			}
-		}
-	};
-
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer, ::boost::uint64_t>
-	{
-		typedef ::boost::uint64_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				value_type temp = host_to_little_endian64(value);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp);
-				if(value < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80;
-					wptr[1] = ptr[0];
-				}
-				else if(value < 0x10000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-				else if(value < 0x1000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(4);
-					wptr[0] = 0x82;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-				}
-				else if(value < 0x100000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(5);
-					wptr[0] = 0x83;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-				}
-				else if(value < 0x10000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(6);
-					wptr[0] = 0x84;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-				}
-				else if(value < 0x1000000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(7);
-					wptr[0] = 0x85;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-				}
-				else if(value < 0x100000000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(8);
-					wptr[0] = 0x86;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-					wptr[7] = ptr[6];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(9);
-					wptr[0] = 0x87;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-					wptr[7] = ptr[6];
-					wptr[8] = ptr[7];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
-
-  template <>
-	struct value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t>
-	{
-		typedef ::boost::int64_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void read(store_ty& store_data, value_type& value)
-		{
-			const int bytes = sizeof(value_type);
-			::boost::uint8_t tag = store_data.get_char();
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-			if(tag > const_tag_as_value)
-			{
-				int sign = 1;
-				if((long)tag & const_negative_bit_value)
-				{
-					sign = -1;
-				}
-				int read_bytes = (int(tag) & const_interger_byte_msak) + 1;
-				if( bytes < read_bytes )
-				{
-					store_data.set_error_code(value_too_large_to_integer_number);
-					return;
-
-				}
-				value = 0;
-				store_data.read((char*)&value,read_bytes);
-				if(store_data.bad())
-				{
-					store_data.set_error_code(stream_buffer_overflow);
-					return;
-				}
-				value = little_endian_to_host64(value);
-				if(sign < 0)
-				{
-					value = -value;
-				}
-			}
-			else
-			{
-				value = tag;
-			}
-		}
-	};
-
-  template <>
-	struct value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t>
-	{
-		typedef ::boost::int64_t value_type;
-		typedef zero_copy_buffer store_ty;
-		static AMSG_INLINE void write(store_ty& store_data, const value_type& value)
-		{
-			if(0 <= value && value < const_tag_as_type)
-			{
-				::boost::uint8_t * ptr = store_data.append_write(1);
-				*ptr = (::boost::uint8_t)value;
-			}
-			else
-			{
-				::boost::uint8_t negative_bit = 0;
-				value_type temp = value;
-				if(value < 0)
-				{
-					negative_bit = const_negative_bit_value;
-					temp = -value;
-				}
-				value_type temp1 = host_to_little_endian64(temp);
-				::boost::uint8_t * ptr = (::boost::uint8_t *)(&temp1);
-				if(temp < 0x100)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(2);
-					wptr[0] = 0x80+negative_bit;
-					wptr[1] = ptr[0];
-				}
-				else if(temp < 0x10000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(3);
-					wptr[0] = 0x81+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-				}
-				else if(temp < 0x1000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(4);
-					wptr[0] = 0x82+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-				}
-				else if(temp < 0x100000000)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(5);
-					wptr[0] = 0x83+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-				}
-				else if(temp < 0x10000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(6);
-					wptr[0] = 0x84+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-				}
-				else if(temp < 0x1000000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(7);
-					wptr[0] = 0x85+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-				}
-				else if(temp < 0x100000000000000LL)
-				{
-					::boost::uint8_t * wptr = store_data.append_write(8);
-					wptr[0] = 0x86+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-					wptr[7] = ptr[6];
-				}
-				else
-				{
-					::boost::uint8_t * wptr = store_data.append_write(9);
-					wptr[0] = 0x87+negative_bit;
-					wptr[1] = ptr[0];
-					wptr[2] = ptr[1];
-					wptr[3] = ptr[2];
-					wptr[4] = ptr[3];
-					wptr[5] = ptr[4];
-					wptr[6] = ptr[5];
-					wptr[7] = ptr[6];
-					wptr[8] = ptr[7];
-				}
-			}
-			if(store_data.bad())
-			{
-				store_data.set_error_code(stream_buffer_overflow);
-				return;
-			}
-		}
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::uint8_t,tag>
-	{
-		typedef value_read_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::uint8_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::uint8_t,tag>
-	{
-		typedef value_write_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::uint8_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::int8_t,tag>
-	{
-		typedef value_read_signed_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::int8_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::int8_t,tag>
-	{
-		typedef value_write_signed_char_like_support_zerocopy_impl<zero_copy_buffer,::boost::int8_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,char,tag>
-	{
-		typedef char value_type;
-		typedef typename ::boost::mpl::if_<
-			::boost::is_signed<value_type>,
-			value_read_signed_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>,
-			value_read_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>
-		>::type impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,char,tag>
-	{
-		typedef char value_type;
-		typedef typename ::boost::mpl::if_<
-			::boost::is_signed<value_type>,
-			value_write_signed_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>,
-			value_write_unsigned_char_like_support_zerocopy_impl<zero_copy_buffer,value_type>
-		>::type impl_type;
-	};
-
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::uint16_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint16_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::uint16_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint16_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::int16_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::int16_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int16_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::uint32_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint32_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::uint32_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint32_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::int32_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::int32_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int32_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::uint64_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::uint64_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::uint64_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::uint64_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_read_support<zero_copy_buffer,::boost::int64_t,tag>
-	{
-		typedef value_read_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t> impl_type;
-	};
-
-	template<int tag>
-	struct value_write_support<zero_copy_buffer,::boost::int64_t,tag>
-	{
-		typedef value_write_support_zerocopy_impl<zero_copy_buffer,::boost::int64_t> impl_type;
-	};
-
-
-}}
+}
 
 #endif

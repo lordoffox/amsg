@@ -1,4 +1,4 @@
-AMSG v1.0
+AMSG v2.0
 =======
 
 AMSG is an C++ serialization library.
@@ -9,8 +9,8 @@ Features Overview
 * Lightweight, fast and efficient serialization implementations
 * Only one macro to register C++ struct, one line code that's all
 * Header only, no need to build library, just three hpp files
-* Support C++03 and C++11 (Need AMSG_STD_CXX11 macro)
-* Default support C++ built-in types and all std containters (include C++11's)
+* Support C++11
+* Default support C++ built-in types and all std containters
 
 What is AMSG?
 ---------------
@@ -62,16 +62,13 @@ Dependencies
 Supported Compilers
 -------------------
 
-* GCC >= 4.6
-* VC >= 9.0 (sp1)
+* GCC >= 4.8
+* VC >= 12.0 (sp1)
 
-Support C++11
+Require C++11
 -------------------
 
-Define AMSG_STD_CXX11 in your project or just before include amsg hpps
-
 ```cpp
-#define AMSG_STD_CXX11
 #include <amsg/all.hpp>
 
 // C++11's forward_list
@@ -155,3 +152,8 @@ If no sfix, age will dependence its value:
   -2,147,483,648 to 2,147,483,647 --> 4byte
 
 note: sfix only effect built-in types(int, short, long, char, float, double and so on).
+
+Change list:
+V2.0:	
+	1.refact with C++11, less and clean code for human readable.
+	2.add forwards and backwards compatibility.
