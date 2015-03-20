@@ -156,4 +156,6 @@ note: sfix only effect built-in types(int, short, long, char, float, double and 
 Change list:
 V2.0:	
 	1.refact with C++11, less and clean code for human readable.
+	
 	2.add forwards and backwards compatibility.
+	
