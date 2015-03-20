@@ -155,3 +155,7 @@ If no sfix, age will dependence its value:
   -2,147,483,648 to 2,147,483,647 --> 4byte
 
 note: sfix only effect built-in types(int, short, long, char, float, double and so on).
+
+Change list: V1.1:
+
+  add forwards and backwards compatibility.
