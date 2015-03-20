@@ -2827,7 +2827,139 @@ namespace amsg{	namespace detail
 		}
 	};
 
+  template <typename ty>
+  struct can_skip_opt
+  {
+    static AMSG_INLINE bool check(const ty&)
+    {
+      return false;
+    }
+  };
+
+  template<typename alloc_ty>
+  struct can_skip_opt<::std::basic_string<char, ::std::char_traits<char>, alloc_ty> >
+  {
+    typedef ::std::basic_string<char, ::std::char_traits<char>, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename ty, typename alloc_ty>
+  struct can_skip_opt < ::std::list<ty, alloc_ty> >
+  {
+    typedef ::std::list<ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename ty, typename alloc_ty>
+  struct can_skip_opt < ::std::deque<ty, alloc_ty> >
+  {
+    typedef ::std::deque<ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename ty, typename alloc_ty>
+  struct can_skip_opt < ::std::vector<ty, alloc_ty> >
+  {
+    typedef ::std::vector<ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+#if defined(AMSG_STD_CXX11) || defined(AMSG_HAS_STD_FORWARD_LIST)
+  template<typename ty, typename alloc_ty>
+  struct can_skip_opt < ::std::forward_list<ty, alloc_ty> >
+  {
+    typedef ::std::forward_list<ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+#endif
+
+  template<typename key_ty, typename ty, typename cmp_ty, typename alloc_ty>
+  struct can_skip_opt < ::std::map<key_ty, ty, cmp_ty, alloc_ty> >
+  {
+    typedef typename ::std::map<key_ty, ty, cmp_ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename key_ty, typename ty, typename cmp_ty, typename alloc_ty>
+  struct can_skip_opt < ::std::multimap<key_ty, ty, cmp_ty, alloc_ty> >
+  {
+    typedef typename ::std::multimap<key_ty, ty, cmp_ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename key_ty, typename ty, typename cmp_ty, typename alloc_ty>
+  struct can_skip_opt < ::boost::unordered::unordered_map<key_ty, ty, cmp_ty, alloc_ty> >
+  {
+    typedef typename ::boost::unordered::unordered_map<key_ty, ty, cmp_ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+#if defined(AMSG_STD_CXX11) || defined(AMSG_HAS_STD_UNORDERED_MAP)
+  template<typename key_ty, typename ty, typename cmp_ty, typename alloc_ty>
+  struct can_skip_opt < ::std::unordered_map<key_ty, ty, cmp_ty, alloc_ty> >
+  {
+    typedef typename ::std::unordered_map<key_ty, ty, cmp_ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename key_ty, typename ty, typename cmp_ty, typename alloc_ty>
+  struct can_skip_opt < ::std::unordered_multimap<key_ty, ty, cmp_ty, alloc_ty> >
+  {
+    typedef typename ::std::unordered_multimap<key_ty, ty, cmp_ty, alloc_ty> value_type;
+    static AMSG_INLINE bool check(const value_type& value)
+    {
+      return value.empty();
+    }
+  };
+
+  template<typename ty>
+  struct can_skip_opt <sfix_op<ty> >
+  {
+    static AMSG_INLINE bool check(const sfix_op<ty>& value)
+    {
+      return can_skip_opt<ty>::check(value.obj);
+    }
+  };
+
+  template<typename ty>
+  struct can_skip_opt < smax_valid<ty> >
+  {
+    static AMSG_INLINE bool check(const smax_valid<ty>& value)
+    {
+      return can_skip_opt<ty>::check(value.obj);
+    }
+  };
+
+#endif
 }
+
 template <int tag , typename store_ty , typename ty>
 AMSG_INLINE void read_x(store_ty& store_data, ty& value)
 {
@@ -2871,59 +3003,119 @@ AMSG_INLINE ::boost::uint32_t size_of_x(const ty& value)
 }
 
 template <typename ty>
-AMSG_INLINE::boost::uint32_t size_of(const ty& value)
+AMSG_INLINE ::boost::uint32_t size_of(const ty& value)
 {
 	return ::amsg::detail::byte_size_of<ty,0>::impl_type::size(value);
 }
 
+template <typename ty>
+AMSG_INLINE bool can_skip(const ty& value)
+{
+  return ::amsg::detail::can_skip_opt<ty>::check(value);
 }
 
-#define AMSG_READ_MEMBER_X( r , v , elem ) \
-	::amsg::read_x<tag>(store_data,v.elem);\
-	if(store_data.error())\
-{\
-	store_data.append_debug_info(".");\
-	store_data.append_debug_info(BOOST_PP_STRINGIZE(elem));\
-	return;\
 }
 
-#define AMSG_WRITE_MEMBER_X( r ,v , elem ) \
-	::amsg::write_x<tag>(store_data,v.elem);
+#define AMSG_TAG_MEMBER_X( r ,v , elem ) \
+  if(!can_skip(v.elem))	\
+  {\
+    wtag |= mask;\
+  }\
+  mask <<= 1;
 
 #define AMSG_SIZE_MEMBER_X( r ,v , elem ) \
-	size += ::amsg::size_of_x<tag>(v.elem);
+	if(!can_skip(v.elem))	\
+  {\
+    stag |= mask;\
+    size += ::amsg::size_of_x<tag>(v.elem);\
+  }\
+  mask <<= 1;
+
+#define AMSG_READ_MEMBER_X( r , v , elem ) \
+	if(rtag&mask)\
+  {\
+    ::amsg::read_x<tag>(store_data,v.elem);\
+	  if(store_data.error())\
+    {\
+	    store_data.append_debug_info(".");\
+	    store_data.append_debug_info(BOOST_PP_STRINGIZE(elem));\
+	    return;\
+    }\
+  }\
+  mask <<= 1;
+
+#define AMSG_WRITE_MEMBER_X( r ,v , elem ) \
+	if(wtag&mask)\
+  {\
+    ::amsg::write_x<tag>(store_data,v.elem);\
+	  if(store_data.error())\
+    {\
+	    store_data.append_debug_info(".");\
+	    store_data.append_debug_info(BOOST_PP_STRINGIZE(elem));\
+	    return;\
+    }\
+  }\
+  mask <<= 1;
 
 #define AMSG_X(TYPE, MEMBERS,X)\
 	namespace amsg { namespace detail {\
-	template<typename store_ty,int tag>	\
-struct value_read_support_impl<store_ty,TYPE,tag>	\
-{\
-	typedef TYPE value_type;\
-	static AMSG_INLINE void read(store_ty& store_data, value_type& value)\
-{\
-	BOOST_PP_SEQ_FOR_EACH( AMSG_READ_MEMBER_X , value , MEMBERS ) \
-}\
-};\
-	template<typename store_ty,int tag>	\
-struct value_write_support_impl<store_ty,TYPE,tag>	\
-{\
-	typedef TYPE value_type;\
-	static AMSG_INLINE void write(store_ty& store_data, const value_type& value)\
-{\
-	BOOST_PP_SEQ_FOR_EACH( AMSG_WRITE_MEMBER_X , value , MEMBERS ) \
-}\
-};\
 	template<int tag>	\
-struct byte_size_of_impl<TYPE,tag>	\
-{\
-	typedef TYPE value_type;\
-	static AMSG_INLINE ::boost::uint32_t size(const value_type& value)\
-{\
-	::boost::uint32_t size = 0;\
-	BOOST_PP_SEQ_FOR_EACH( AMSG_SIZE_MEMBER_X , value , MEMBERS ) \
-	return size;\
-}\
-};}}
+  struct byte_size_of_impl<TYPE,tag>	\
+  {\
+	  typedef TYPE value_type;\
+	  static AMSG_INLINE ::boost::uint32_t size(const value_type& value)\
+    {\
+      uint32_t size = 0;\
+      uint64_t stag = 0;\
+      uint64_t mask = 1;\
+	    BOOST_PP_SEQ_FOR_EACH( AMSG_SIZE_MEMBER_X , value , MEMBERS ) \
+      size += size_of(stag);\
+      size += size_of(size + size_of(size));\
+      return size;\
+    }\
+  };\
+  template<typename store_ty,int tag>	\
+  struct value_read_support_impl<store_ty,TYPE,tag>	\
+  {\
+	  typedef TYPE value_type;\
+	  static AMSG_INLINE void read(store_ty& store_data, value_type& value)\
+    {\
+        ::std::size_t offset = store_data.read_length(); \
+        uint32_t len_tag = 0; \
+        uint64_t rtag = 0; \
+        uint64_t mask = 1; \
+        ::amsg::read_x<tag>(store_data, len_tag); \
+        if (store_data.error()){ return; }\
+        ::amsg::read_x<tag>(store_data, rtag); \
+        if (store_data.error()){ return; }\
+        BOOST_PP_SEQ_FOR_EACH(AMSG_READ_MEMBER_X, value, MEMBERS) \
+        if (len_tag >= 0)\
+        {\
+          ::std::size_t read_len = store_data.read_length() - offset; \
+          ::std::size_t len = (::std::size_t)len_tag; \
+          if (len > read_len) store_data.skip_read(len - read_len); \
+        }\
+    }\
+  };\
+	template<typename store_ty,int tag>	\
+  struct value_write_support_impl<store_ty,TYPE,tag>	\
+  {\
+	  typedef TYPE value_type;\
+	  static AMSG_INLINE void write(store_ty& store_data, const value_type& value)\
+    {\
+      uint32_t size = size_of(value); \
+      uint64_t wtag = 0; \
+      uint64_t mask = 1; \
+      BOOST_PP_SEQ_FOR_EACH(AMSG_TAG_MEMBER_X, value, MEMBERS) \
+      ::amsg::write_x<tag>(store_data, size); \
+      if (store_data.error()){ return; }\
+      ::amsg::write_x<tag>(store_data, wtag); \
+      if (store_data.error()){ return; }\
+      mask = 1; \
+      BOOST_PP_SEQ_FOR_EACH(AMSG_WRITE_MEMBER_X, value, MEMBERS) \
+    }\
+  };\
+}}
 
 #define AMSG(TYPE, MEMBERS) AMSG_X(TYPE, MEMBERS,0)
 
