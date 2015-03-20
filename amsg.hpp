@@ -1528,12 +1528,12 @@ template<typename store_ty>	\
 AMSG_INLINE void read(store_ty& store_data, TYPE& value)\
 {\
   ::std::size_t offset = store_data.read_length();\
+  uint32_t len_tag = 0;\
   uint64_t tag = 0;\
   uint64_t mask = 1;\
-  read(store_data,tag);\
-  if(store_data.error()){return;}\
-  int32_t len_tag = 0;\
   read(store_data, len_tag);\
+  if(store_data.error()){return;}\
+  read(store_data,tag);\
   if (store_data.error()){return;}\
 	BOOST_PP_SEQ_FOR_EACH( AMSG_READ_MEMBER , value , MEMBERS ) \
   if(len_tag >= 0)\
@@ -1551,8 +1551,10 @@ AMSG_INLINE void write(store_ty& store_data, const TYPE& value)\
   uint64_t tag = 0;\
   uint64_t mask = 1;\
   BOOST_PP_SEQ_FOR_EACH( AMSG_TAG_MEMBER_X , value , MEMBERS ) \
-  write(store_data,tag);\
   write(store_data, size);\
+  if(store_data.error()){return;}\
+  write(store_data,tag);\
+  if(store_data.error()){return;}\
   mask = 1;\
 	BOOST_PP_SEQ_FOR_EACH( AMSG_WRITE_MEMBER , value , MEMBERS ) \
 }\
