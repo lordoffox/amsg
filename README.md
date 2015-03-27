@@ -156,6 +156,34 @@ If no sfix, age will dependence its value:
 
 note: sfix only effect built-in types(int, short, long, char, float, double and so on).
 
+delete
+------------------------
+Time flies. Sometimes you want delete some field from your struct, you can do like this.
+struct person
+{
+  boost::int32_t age;
+
+  bool operator==(person const& rhs) const
+  {
+    return age == rhs.age;
+  }
+};
+
+AMSG(person, (del_string_t)(age&sfix)); // now field name is gone but we still can access old version data and got right value for field age.
+and also:
+del_int_t
+del_enum_t
+del_fix_int8_t
+del_fix_int16_t
+del_fix_int32_t
+del_fix_int64_t
+del_float_t
+del_double_t
+del_string_t
+del_t<list_t<T>>
+del_t<map_t<K,V>>
+do there job for you.
+
 Change list: V1.1:
 
   add forwards and backwards compatibility.
