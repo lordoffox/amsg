@@ -1,4 +1,4 @@
-AMSG v1.0
+AMSG v1.1
 =======
 
 AMSG is an C++ serialization library.
