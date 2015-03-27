@@ -159,3 +159,5 @@ note: sfix only effect built-in types(int, short, long, char, float, double and 
 Change list: V1.1:
 
   add forwards and backwards compatibility.
+
+  add delete field.
