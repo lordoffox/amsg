@@ -182,7 +182,8 @@ del_double_t
 del_string_t
 del_t<list_t<T>>
 del_t<map_t<K,V>>
-do there job for you.
+
+work for you.
 
 Change list: V1.1:
 
