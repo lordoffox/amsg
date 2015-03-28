@@ -170,7 +170,10 @@ struct person
 };
 
 AMSG(person, (del_string_t)(age&sfix)); // now field name is gone but we still can access old version data and got right value for field age.
+
 and also:
+
+```cpp
 del_int_t
 del_enum_t
 del_fix_int8_t
@@ -182,6 +185,7 @@ del_double_t
 del_string_t
 del_t<list_t<T>>
 del_t<map_t<K,V>>
+```
 
 work for you.
 
