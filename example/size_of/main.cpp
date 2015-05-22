@@ -26,7 +26,7 @@ namespace usr
   };
 }
 
-AMSG(usr::person, (name)(age)(married));
+AMSG(usr::person, (v.name)(v.age)(v.married));
 
 int main()
 {

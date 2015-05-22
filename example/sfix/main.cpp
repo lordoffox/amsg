@@ -26,8 +26,8 @@ namespace usr
   };
 }
 
-AMSG(usr::msg_header_fix, (size&sfix)(type&sfix));
-AMSG(usr::msg_header, (size)(type));
+AMSG(usr::msg_header_fix, (v.size&sfix)(v.type&sfix));
+AMSG(usr::msg_header, (v.size)(v.type));
 
 int main()
 {

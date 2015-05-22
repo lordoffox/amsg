@@ -22,7 +22,7 @@ struct person
 };
 }
 
-AMSG(usr::person, (name&smax(30))(age&sfix)(married));
+AMSG(usr::person, (v.name&smax(30))(v.age&sfix)(v.married));
 
 #define ENOUGH_SIZE 4096
 

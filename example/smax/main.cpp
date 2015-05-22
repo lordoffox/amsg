@@ -38,8 +38,8 @@ namespace usr
   };
 }
 
-AMSG(usr::person, (name&smax(5))(age)(married));
-AMSG(usr::person2, (name)(age)(married));
+AMSG(usr::person, (v.name&smax(5))(v.age)(v.married));
+AMSG(usr::person2, (v.name)(v.age)(v.married));
 
 #define ENOUGH_SIZE 4096
 
