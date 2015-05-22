@@ -1752,7 +1752,7 @@ namespace amsg{	namespace detail
 				{
 					write_bytes = 9;
 				}
-				*ptr = const_store_postive_integer_byte_mask + negative_bit + write_bytes;
+				*ptr = (::boost::uint8_t)(const_store_postive_integer_byte_mask + negative_bit + write_bytes);
 			}
 			store_data.write((const char *)ptr,write_bytes);
 			if(store_data.bad())
